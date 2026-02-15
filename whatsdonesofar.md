@@ -1,190 +1,167 @@
-Partie B : Déploiement d’applications avec Dockers
+# Rapport de Projet : Déploiement d’Applications avec Docker
 
-1. Préparation de l’environnement sous VMware Workstation
-Pour atteindre les objectifs du TP, les machines suivantes sont créées et configurées 
-sur VMware Workstation dans le réseau virtuel VMnet10 :
+## 1. Préparation de l'Environnement
+Pour ce TP, nous avons configuré un réseau virtuel **VMnet10** sur VMware Workstation avec deux machines distinctes :
 
-1.1. Serveur Ubuntu
-- Cette machine ayant Ubuntu 20.04 comme système d’exploitation.
-- C’est dans cette machine que nous allons créer et gérer les images Docker.
+*   **Serveur Ubuntu (20.04)** : Machine hôte pour la création et la gestion des conteneurs Docker.
+*   **Client RedHat (7.0)** : Machine cliente utilisée pour tester l'accessibilité des services déployés sur le serveur.
 
-1.2. Client RedHat
-- Cette machine a comme système d’exploitation RedHat 7.0, elle joue le rôle de 
-  client pour accéder au serveur Ubuntu.
+---
 
-2. Installation de Docker
-Commençons tout d’abord par mettre à jour la liste des paquets déjà existants 
-au niveau du Serveur Ubuntu :
+## 2. Installation de Docker (Serveur Ubuntu)
+L'installation a été réalisée en suivant les étapes officielles :
+
+```bash
+# Mise à jour des paquets
 sudo apt update
 
-Une fois terminé, installons les paquets nécessaires pour permettre à APT 
-d’utiliser des paquets via HTTPS :
+# Installation des prérequis pour HTTPS
 sudo apt install apt-transport-https ca-certificates curl software-properties-common
 
-Maintenant, nous devons ajouter la clé GPG du référentiel Docker officiel à 
-notre système pour garantir la validité des téléchargements :
+# Ajout de la clé GPG officielle Docker
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
-Ajoutons par la suite le référentiel Docker aux sources APT :
+# Ajout du référentiel Docker
 sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable"
 
-Mettons à jour tous les paquets (paquets du référentiel Docker) que nous 
-venons d’ajouter :
+# Installation du moteur Docker
 sudo apt update
-
-Il ne reste plus qu’à installer Docker en utilisant la commande suivante :
 sudo apt install docker-ce
 
-Exécutons la commande suivante pour vérifier que le Docker s’est bien 
-installé et qu’il est actif :
+# Vérification du statut
 sudo systemctl status docker
+```
 
-3. Utilisation de Docker
-Commençons d’abord par ajouter l’utilisateur au groupe docker, question d’éviter 
-à chaque fois de faire appel à l’utilisateur root :
+---
+
+## 3. Configuration Initiale
+Ajout de l'utilisateur courant au groupe `docker` pour éviter l'usage systématique de `sudo` :
+
+```bash
 sudo usermod -aG docker ${USER}
-
-Pour activer les changements aux groupes, utilisons la commande suivante :
 su - ${USER}
+```
 
-Démarrons l’image Docker hello-world pour vérifier que l’installation a bien été faite :
+Vérification avec l'image de test :
+```bash
 docker run hello-world
+```
 
-Nous pouvons vérifier également que, pour l’instant, nous n’avons aucune image Docker locale :
-docker images
+---
 
-3.1. Création d’une image Docker
-Pour créer une image Docker, nous devons d’abord créer un fichier nommé Dockerfile. 
-Ce dernier est la description des différentes étapes à suivre pour construire notre image.
+## 4. Première Phase : Application Flask Simple
 
-
-
-Contenu du Dockerfile utilisé :
---------------------------------------------------
+### 4.1. Dockerfile Initial
+```dockerfile
 FROM python:3.8-slim-buster
 WORKDIR /app
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 COPY . .
 CMD [ "python3", "-m" , "flask", "run", "--host=0.0.0.0", "--port=80"]
---------------------------------------------------
+```
 
-Le fichier « requirements.txt » contient les bibliothèques nécessaires :
-Flask
-
-L’application web en question (créée à base de flask) contient un simple message 
-qui s’affiche à l’utilisateur (app.py) :
---------------------------------------------------
-from flask import Flask
-app = Flask(__name__)
-
-@app.route('/')
-def hello_world():
-    return 'Hello, Docker!'
---------------------------------------------------
-
-Créer l’image Docker à partir du Dockerfile :
+### 4.2. Build et Exécution
+```bash
+# Construction de l'image
 docker build --tag python-docker .
 
-Démarrons le conteneur en spécifiant que le site est accessible à partir du 
-port 8081 de la machine locale :
+# Lancement du conteneur (mappage port 8081 -> 80)
 docker run -d -p 8081:80 python-docker
+```
 
-Pour afficher la liste des conteneurs actifs :
-docker ps
+### 4.3. Tests d'Accessibilité
+*   **Local (Ubuntu)** : `http://localhost:8081`
+*   **Distant (RedHat)** : `http://[IP_UBUNTU]:8081`
 
-3.2. Tests
-Vérifions que l’application web est accessible à partir de la machine locale 
-(c’est-à-dire à partir du serveur Ubuntu) :
-Lancement du navigateur sur http://localhost:8081
+---
 
-Vérifions cette fois que l’application web est accessible à partir de la machine 
-cliente (c’est-à-dire à partir du client Redhat) :
-Accès via l'adresse IP du serveur sur le port 8081.
+## 5. Phase 2 : Architecture Full-Stack (3-Tiers)
+Le projet a été étendu vers une architecture complète comprenant un Frontend, un Backend et une Base de Données.
 
-Si nous souhaitons arrêter le conteneur, il suffit juste d’exécuter la commande 
-suivante en spécifiant l’ID du conteneur :
-docker stop [ID_DU_CONTENEUR]
+### 5.1. Composants Logiciels
+*   **Frontend** : Application **React** avec gestion du Login et page de succès.
+*   **Backend** : API **Flask** (Python 3.11) gérant l'authentification et la connexion DB.
+*   **Base de Données** : **PostgreSQL 13** avec initialisation automatique.
 
-Affichons la liste des conteneurs actifs pour confirmer :
-docker ps
+---
 
-4. Partage et Portabilité de l'image (Docker Hub)
-Pour rendre notre application portable et accessible depuis d'autres machines, 
-nous allons utiliser un registre d'images (Docker Hub).
+## 6. Détails de la Conteneurisation (Dockerfiles)
 
-4.1. Connexion au Registre
-Connectons-nous à notre compte Docker Hub depuis le terminal :
-docker login
+### 6.1. Base de Données (`database/Dockerfile`)
+```dockerfile
+FROM postgres:13
+# Initialisation automatique de la table 'users'
+COPY init.sql /docker-entrypoint-initdb.d/
+```
 
-4.2. Tag de l'image
-Pour publier l'image, nous devons lui donner un nom qui inclut notre nom 
-d'utilisateur Docker Hub ([NOM_UTILISATEUR]) :
-docker tag python-docker [NOM_UTILISATEUR]/python-docker
+### 6.2. Backend (`backend/Dockerfile`)
+```dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+RUN apt-get update && apt-get install -y libpq-dev gcc
+COPY requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+COPY . .
+EXPOSE 5000
+CMD ["python3", "app.py"]
+```
 
-4.3. Publication (Push)
-Envoyons maintenant l'image vers le registre :
-docker push [NOM_UTILISATEUR]/python-docker
+### 6.3. Frontend (`frontend/Dockerfile`)
+```dockerfile
+# Stage 1: Build React
+FROM node:18-slim as build
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-5. Déploiement sur le Client RedHat
-Maintenant que l'image est hébergée sur Docker Hub, nous pouvons la déployer 
-sur n'importe quelle autre machine disposant de Docker, comme notre client RedHat.
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
+COPY --from=build /app/build /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
+```
 
-5.1. Récupération de l'image (Pull)
-Sur la machine RedHat, téléchargeons l'image que nous venons de pousser :
-docker pull [NOM_UTILISATEUR]/python-docker
+---
 
-5.2. Exécution et Verification
-Démarrons le conteneur sur le client RedHat :
-docker run -d -p 8081:80 [NOM_UTILISATEUR]/python-docker
+## 7. Orchestration des Services sur Ubuntu
+Le déploiement se fait manuellement via des commandes Docker optimisées pour Bash.
 
-Nous pouvons maintenant vérifier que l'application fonctionne en accédant à 
-l'adresse IP du client RedHat sur le port 8081.
+### 7.1. Lancement de la Base de Données
+```bash
+docker build -t postgres-db ./database
+docker run -d --name db \
+  -e POSTGRES_DB=mydatabase \
+  -e POSTGRES_USER=myuser \
+  -e POSTGRES_PASSWORD=mypassword \
+  -p 5432:5432 \
+  postgres-db
+```
 
-6. Extension vers une Architecture Full-Stack
-Pour faire évoluer le projet, nous avons mis en place une architecture 3-tiers 
-comprenant un Frontend (React), un Backend (Flask) et une Base de Données (PostgreSQL).
+### 7.2. Lancement du Backend
+```bash
+docker build -t flask-backend ./backend
+docker run -d --name backend \
+  --link db:db \
+  -e DB_HOST=db \
+  -e DB_NAME=mydatabase \
+  -e DB_USER=myuser \
+  -e DB_PASSWORD=mypassword \
+  -p 5000:5000 \
+  flask-backend
+```
 
-6.1. Frontend (React)
-- Création d'une application React avec deux vues principales :
-  * Login : Formulaire d'authentification envoyant des requêtes POST au backend.
-  * Success : Page de confirmation affichée après une authentification réussie.
+### 7.3. Lancement du Frontend
+```bash
+docker build -t react-frontend ./frontend
+docker run -d --name frontend -p 8080:80 react-frontend
+```
 
-6.2. Backend (Flask)
-- Amélioration de l'application app.py pour gérer :
-  * La connexion à la base de données PostgreSQL via psycopg2.
-  * Un endpoint /login pour vérifier les identifiants en base.
-  * La gestion du CORS (flask-cors) pour permettre la communication avec le frontend.
+---
 
-6.3. Base de Données (PostgreSQL)
-- Utilisation de PostgreSQL pour stocker les utilisateurs.
-- Création d'un script "init.sql" pour automatiser la création de la table 'users' 
-  et l'insertion d'un compte administrateur par défaut (admin / password123).
-
-7. Conteneurisation des Services
-Chaque service dispose désormais de son propre Dockerfile pour une isolation complète.
-
-7.1. Dockerfile Backend
-- Base : python:3.11-slim
-- Installation des dépendances (Flask, psycopg2, etc.) et exposition du port 5000.
-
-7.2. Dockerfile Frontend (Multi-stage)
-- Étape 1 : Build de l'application React avec Node.js.
-- Étape 2 : Service des fichiers statiques via un serveur Nginx sur le port 80.
-
-7.3. Dockerfile Database
-- Base : postgres:13
-- Copie automatique du script init.sql dans /docker-entrypoint-initdb.d/ pour 
-  une initialisation au démarrage du conteneur.
-
-8. Orchestration et Déploiement Multi-VM (Ubuntu / RedHat)
-La gestion des conteneurs se fait sur le Serveur Ubuntu via des scripts de 
-commandes simplifiés (txt) pour faciliter le déploiement.
-
-8.1. Déploiement (Ubuntu Server)
-- Build et exécution dans l'ordre : Base de données -> Backend -> Frontend.
-- Utilisation du flag --link pour permettre au backend de communiquer avec la DB.
-
-8.2. Accès Client (RedHat)
-- Accès via le navigateur à l'adresse http://[IP_SERVEUR_UBUNTU]:8080.
-- La communication est fluide sur le réseau VMnet10.
+## 8. Conclusion et Tests Finaux
+L'application est accessible depuis le **Client RedHat** à l'adresse `http://[IP_SERVEUR]:8080`.
+*   **Identifiants par défaut** : `admin` / `password123`.
+*   **Validation** : La redirection vers la page "Success" confirme la communication entre les trois conteneurs (React -> Flask -> Postgres).
