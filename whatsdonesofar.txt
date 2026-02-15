@@ -140,3 +140,51 @@ docker run -d -p 8081:80 [NOM_UTILISATEUR]/python-docker
 
 Nous pouvons maintenant vérifier que l'application fonctionne en accédant à 
 l'adresse IP du client RedHat sur le port 8081.
+
+6. Extension vers une Architecture Full-Stack
+Pour faire évoluer le projet, nous avons mis en place une architecture 3-tiers 
+comprenant un Frontend (React), un Backend (Flask) et une Base de Données (PostgreSQL).
+
+6.1. Frontend (React)
+- Création d'une application React avec deux vues principales :
+  * Login : Formulaire d'authentification envoyant des requêtes POST au backend.
+  * Success : Page de confirmation affichée après une authentification réussie.
+
+6.2. Backend (Flask)
+- Amélioration de l'application app.py pour gérer :
+  * La connexion à la base de données PostgreSQL via psycopg2.
+  * Un endpoint /login pour vérifier les identifiants en base.
+  * La gestion du CORS (flask-cors) pour permettre la communication avec le frontend.
+
+6.3. Base de Données (PostgreSQL)
+- Utilisation de PostgreSQL pour stocker les utilisateurs.
+- Création d'un script "init.sql" pour automatiser la création de la table 'users' 
+  et l'insertion d'un compte administrateur par défaut (admin / password123).
+
+7. Conteneurisation des Services
+Chaque service dispose désormais de son propre Dockerfile pour une isolation complète.
+
+7.1. Dockerfile Backend
+- Base : python:3.11-slim
+- Installation des dépendances (Flask, psycopg2, etc.) et exposition du port 5000.
+
+7.2. Dockerfile Frontend (Multi-stage)
+- Étape 1 : Build de l'application React avec Node.js.
+- Étape 2 : Service des fichiers statiques via un serveur Nginx sur le port 80.
+
+7.3. Dockerfile Database
+- Base : postgres:13
+- Copie automatique du script init.sql dans /docker-entrypoint-initdb.d/ pour 
+  une initialisation au démarrage du conteneur.
+
+8. Orchestration et Déploiement Multi-VM (Ubuntu / RedHat)
+La gestion des conteneurs se fait sur le Serveur Ubuntu via des scripts de 
+commandes simplifiés (txt) pour faciliter le déploiement.
+
+8.1. Déploiement (Ubuntu Server)
+- Build et exécution dans l'ordre : Base de données -> Backend -> Frontend.
+- Utilisation du flag --link pour permettre au backend de communiquer avec la DB.
+
+8.2. Accès Client (RedHat)
+- Accès via le navigateur à l'adresse http://[IP_SERVEUR_UBUNTU]:8080.
+- La communication est fluide sur le réseau VMnet10.
