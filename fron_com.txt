@@ -1,0 +1,13 @@
+# FRONTEND COMMANDS (UBUNTU / BASH)
+# ------------------------------
+
+# 1. Build the frontend image
+docker build -t react-frontend ./frontend
+
+# 2. Run the frontend container
+# Accessible on port 8080.
+
+docker run -d \
+  --name frontend \
+  -p 8080:80 \
+  react-frontend

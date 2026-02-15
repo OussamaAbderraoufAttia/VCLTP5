@@ -1,0 +1,27 @@
+# PROJECT INSTRUCTIONS - UBUNTU SERVER SETUP
+# ------------------------------------------
+
+1. CONTEXT
+   - SERVER: Ubuntu 20.04 VM (where Docker containers run).
+   - CLIENT: RedHat 7.0 VM (accessing the server).
+
+2. START THE DATABASE
+   - Run the commands in 'db_com.txt'.
+   - BUILD the image, then RUN it.
+   - This setup creates the 'db' container and initializes the 'users' table.
+
+3. START THE BACKEND
+   - Run the commands in 'back_com.txt'.
+   - BUILD the image, then RUN it.
+
+4. START THE FRONTEND
+   - Run the commands in 'fron_com.txt'.
+   - BUILD the image (this takes ~1-2 min for React), then RUN it.
+
+5. VERIFICATION (LOCAL ON UBUNTU)
+   - Open browser on Ubuntu: http://localhost:8080
+   - Login: admin / password123
+
+6. VERIFICATION (REMOTE ON REDHAT CLIENT)
+   - Open browser on RedHat: http://[UBUNTU_SERVER_IP]:8080
+   - Ensure the VMs are on the same network (VMnet10).

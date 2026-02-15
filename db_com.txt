@@ -1,0 +1,19 @@
+# DATABASE COMMANDS (UBUNTU / BASH)
+# ------------------------------
+
+# 1. Build the database image
+docker build -t postgres-db ./database
+
+# 2. Run the PostgreSQL container
+# We no longer need to mount the volume if we COPY it in the Dockerfile, 
+# but mounting is still useful for development.
+
+docker run -d \
+  --name db \
+  -e POSTGRES_DB=mydatabase \
+  -e POSTGRES_USER=myuser \
+  -e POSTGRES_PASSWORD=mypassword \
+  -p 5432:5432 \
+  postgres-db
+
+# Wait about 10 seconds for the database to initialize.
